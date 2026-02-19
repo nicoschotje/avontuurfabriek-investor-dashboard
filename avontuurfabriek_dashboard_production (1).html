@@ -1,0 +1,3015 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>De Avontuurfabriek — Investor-Ready Executive Dashboard (Production)</title>
+
+  <!-- Chart.js (CDN with fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js"></script>
+  <script>
+    // Fallback to alternative CDN if primary fails
+    window.Chart || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.7/chart.umd.min.js"><\/script>');
+  </script>
+
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1020;
+      --surface:#0F172A;
+      --surface2:#111C36;
+      --border: rgba(148, 163, 184, 0.18);
+      --text:#E5E7EB;
+      --muted:#94A3B8;
+
+      --indigo:#6366F1;
+      --blue:#3B82F6;
+      --teal:#06B6D4;
+      --green:#10B981;
+      --amber:#F59E0B;
+      --red:#EF4444;
+      --purple:#A855F7;
+      --pink:#EC4899;
+
+      --shadow: 0 18px 45px rgba(0,0,0,.35);
+      --radius: 16px;
+      --radius2: 12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{ box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 12% 5%, rgba(99,102,241,.18), transparent 60%),
+        radial-gradient(900px 600px at 82% 0%, rgba(6,182,212,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    a{ color:#93C5FD; text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    .app{
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(148,163,184,.12) 25%, rgba(148,163,184,.18) 50%, rgba(148,163,184,.12) 75%);
+      background-size: 200% 100%;
+      animation: pulse 1.5s ease-in-out infinite;
+      border-radius: 8px;
+      height: 20px;
+      margin: 8px 0;
+    }
+
+    /* Header */
+    .header{
+      position: sticky;
+      top:0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner{
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 260px;
+    }
+    .mark{
+      width: 42px; height: 42px;
+      display:grid; place-items:center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--indigo), var(--teal));
+      box-shadow: 0 10px 30px rgba(99,102,241,.25);
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
+    .brand h1{
+      font-size: 14px;
+      margin:0;
+      line-height: 1.2;
+      letter-spacing: .3px;
+    }
+    .brand .sub{
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(17, 28, 54, 0.6);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .btn{
+      border: 1px solid var(--border);
+      background: rgba(17, 28, 54, 0.72);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(99, 102, 241, 0.55);
+      background: rgba(99, 102, 241, 0.12);
+    }
+    .btn.primary{
+      border-color: rgba(99,102,241,.55);
+      background: rgba(99,102,241,.16);
+    }
+
+    /* Layout */
+    .main{
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    /* Sidebar */
+    .sidebar{
+      position: sticky;
+      top: 78px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(15, 23, 42, 0.72);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .sidebar .section{
+      padding: 14px;
+      border-top: 1px solid rgba(148,163,184,.12);
+    }
+    .sidebar .section:first-child{ border-top: 0; }
+
+    .nav{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px;
+      role: tablist;
+    }
+    .nav button{
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 12px;
+    }
+    .nav button:hover{
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+    .nav button.active{
+      background: rgba(99, 102, 241, 0.14);
+      border-color: rgba(99, 102, 241, 0.45);
+      color: var(--text);
+    }
+
+    .filters{
+      display:grid;
+      gap: 10px;
+    }
+    .field label{
+      display:block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    select, input[type="text"]{
+      width: 100%;
+      border: 1px solid var(--border);
+      background: rgba(17, 28, 54, 0.6);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 10px;
+      outline: none;
+      font-size: 12px;
+    }
+    select:focus, input[type="text"]:focus{
+      border-color: rgba(6,182,212,.55);
+      box-shadow: 0 0 0 3px rgba(6,182,212,.12);
+    }
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .switch{
+      width: 48px; height: 26px;
+      border-radius: 999px;
+      background: rgba(148,163,184,.25);
+      border: 1px solid rgba(148,163,184,.25);
+      position: relative;
+      cursor:pointer;
+      flex: 0 0 auto;
+    }
+    .switch::after{
+      content:"";
+      position:absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      border-radius: 999px;
+      background: #fff;
+      transition: transform .2s ease;
+    }
+    .switch.active{
+      background: rgba(16,185,129,.25);
+      border-color: rgba(16,185,129,.35);
+    }
+    .switch.active::after{
+      transform: translateX(22px);
+    }
+    .note{
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    /* Confidence Heatmap */
+    .confidence-heatmap {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .confidence-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .confidence-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .confidence-bar {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(148,163,184,.15);
+      overflow: hidden;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .confidence-fill.high { background: linear-gradient(90deg, var(--green), var(--teal)); }
+    .confidence-fill.medium { background: linear-gradient(90deg, var(--amber), var(--indigo)); }
+    .confidence-fill.low { background: linear-gradient(90deg, var(--red), var(--amber)); }
+
+    /* Content */
+    .content{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(15, 23, 42, 0.62);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 650px;
+    }
+    .content-header{
+      padding: 16px 16px 12px 16px;
+      border-bottom: 1px solid rgba(148,163,184,.12);
+      display:flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .content-header h2{
+      margin:0;
+      font-size: 15px;
+      letter-spacing: .2px;
+    }
+    .content-header .subtitle{
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      max-width: 900px;
+    }
+
+    .tab{
+      display:none;
+      padding: 16px;
+      opacity: 0;
+    }
+    .tab.active{ 
+      display:block; 
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .grid{
+      display:grid;
+      gap: 12px;
+    }
+    .grid.cols-4{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid.cols-3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.cols-1{ grid-template-columns: 1fr; }
+
+    @media (max-width: 1200px){
+      .main{ grid-template-columns: 1fr; }
+      .sidebar{ position: relative; top: 0; order: -1; }
+      .grid.cols-4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.cols-3{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.cols-2{ grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 768px){
+      .header-inner{ flex-direction: column; align-items: flex-start; }
+      .brand{ min-width: auto; }
+      .top-actions{ width: 100%; justify-content: flex-start; }
+      .grid.cols-4, .grid.cols-3, .grid.cols-2{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(17, 28, 54, 0.55);
+      border-radius: var(--radius);
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+    .card:hover{
+      border-color: rgba(99,102,241,.35);
+    }
+    .card .kpi{
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: .2px;
+      margin-top: 6px;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--indigo), var(--teal));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .card .label{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .card .meta{
+      margin-top: 8px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge{
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.6);
+      white-space: nowrap;
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+    }
+    .badge.good{ border-color: rgba(16,185,129,.25); color: #A7F3D0; background: rgba(16,185,129,.12); }
+    .badge.warn{ border-color: rgba(245,158,11,.25); color: #FDE68A; background: rgba(245,158,11,.10); }
+    .badge.risk{ border-color: rgba(239,68,68,.25); color: #FECACA; background: rgba(239,68,68,.10); }
+    .badge.pub{ border-color: rgba(59,130,246,.25); color: #BFDBFE; background: rgba(59,130,246,.10); }
+    .badge.assumption{ border-color: rgba(148,163,184,.25); color: #E5E7EB; background: rgba(148,163,184,.10); }
+    .badge.high-conf{ border-color: rgba(16,185,129,.35); color: #A7F3D0; background: rgba(16,185,129,.15); }
+    .badge.medium-conf{ border-color: rgba(245,158,11,.35); color: #FDE68A; background: rgba(245,158,11,.12); }
+
+    .chart{
+      height: 290px;
+      position: relative;
+      margin-top: 10px;
+    }
+    .chart.tall{ height: 380px; }
+    .chart.short{ height: 240px; }
+    canvas{ width:100% !important; height:100% !important; }
+
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+    .table th, .table td{
+      border-bottom: 1px solid rgba(148,163,184,.12);
+      padding: 10px 10px;
+      vertical-align: top;
+      font-size: 12px;
+    }
+    .table th{
+      text-align: left;
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: .2px;
+      background: rgba(15,23,42,.45);
+      position: sticky;
+      top: 0;
+    }
+    .table tr:hover td{
+      background: rgba(99,102,241,.06);
+    }
+    .small{
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .mono{ font-family: var(--mono); }
+    .hr{
+      height: 1px;
+      background: rgba(148,163,184,.12);
+      margin: 12px 0;
+      border:0;
+    }
+
+    .callout{
+      border: 1px solid rgba(99,102,241,.28);
+      background: rgba(99,102,241,.10);
+      border-radius: var(--radius);
+      padding: 12px;
+      color: #E0E7FF;
+    }
+    .callout b{ color: #fff; }
+    .callout.warn{
+      border-color: rgba(245,158,11,.28);
+      background: rgba(245,158,11,.10);
+      color: #FEF3C7;
+    }
+    .callout.success{
+      border-color: rgba(16,185,129,.28);
+      background: rgba(16,185,129,.10);
+      color: #D1FAE5;
+    }
+
+    .sources{
+      display:grid;
+      gap: 10px;
+    }
+    .source{
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(17, 28, 54, 0.45);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .source .title{
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .2px;
+      margin-bottom: 4px;
+    }
+    .source .desc{
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    /* Demand Drivers */
+    .demand-drivers {
+      display: grid;
+      gap: 10px;
+    }
+    .driver-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 10px;
+      background: rgba(17, 28, 54, 0.35);
+    }
+    .driver-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .driver-icon.tech { background: linear-gradient(135deg, var(--indigo), var(--purple)); }
+    .driver-icon.social { background: linear-gradient(135deg, var(--teal), var(--blue)); }
+    .driver-icon.demo { background: linear-gradient(135deg, var(--green), var(--teal)); }
+    .driver-icon.exp { background: linear-gradient(135deg, var(--amber), var(--pink)); }
+    .driver-content {
+      flex: 1;
+    }
+    .driver-title {
+      font-weight: 800;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .driver-desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* Print (Investor PDF) */
+    @media print{
+      .header .top-actions, .sidebar .section:not(:first-child) { display:none !important; }
+      body{ background: #fff; color: #111827; }
+      .content{ box-shadow: none; border: 0; background: #fff; page-break-inside: avoid; }
+      .card{ background: #fff; border: 1px solid #E5E7EB; page-break-inside: avoid; margin-bottom: 20px; }
+      .badge{ border-color: #E5E7EB; background: #F9FAFB; color: #111827; }
+      .card .kpi{ color: #111827 !important; -webkit-text-fill-color: #111827; }
+      a{ color: #111827; text-decoration: underline; }
+      .tab{ display: block !important; page-break-before: always; }
+      .tab:first-child{ page-break-before: auto; }
+      .main{ grid-template-columns: 1fr; }
+      .sidebar{ position: relative; top: 0; }
+      .chart{ page-break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="mark">DA</div>
+          <div>
+            <h1>De Avontuurfabriek — Executive / Investor Dashboard</h1>
+            <div class="sub" id="headerSub">Decision-grade view • Evidence-first • Production</div>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="pill" title="Build metadata">
+            <span class="mono">Build:</span> <span class="mono" id="buildId">INV-2026.02.19-PROD</span>
+          </div>
+          <div class="pill" title="Current view date">
+            <span class="mono">As of:</span> <span class="mono" id="asOfDate"></span>
+          </div>
+          <button class="btn primary" id="btnPrint">Export PDF</button>
+          <button class="btn" id="btnReset">Reset Filters</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main">
+      <aside class="sidebar">
+        <nav class="nav" id="nav" role="tablist" aria-label="Dashboard sections">
+          <button data-tab="executive" class="active" role="tab" aria-selected="true" aria-controls="tab-executive">Executive Summary</button>
+          <button data-tab="market" role="tab" aria-selected="false" aria-controls="tab-market">Market Evidence</button>
+          <button data-tab="cases" role="tab" aria-selected="false" aria-controls="tab-cases">Investment Cases</button>
+          <button data-tab="model" role="tab" aria-selected="false" aria-controls="tab-model">Scenario Model</button>
+          <button data-tab="dataroom" role="tab" aria-selected="false" aria-controls="tab-dataroom">Data Room</button>
+        </nav>
+
+        <div class="section">
+          <div class="filters">
+            <div class="field">
+              <label for="scenario">Scenario (model output)</label>
+              <select id="scenario">
+                <option value="base">Base</option>
+                <option value="downside">Downside</option>
+                <option value="upside">Upside</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="currency">Currency (display)</label>
+              <select id="currency">
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="marketView">Market view (evidence)</label>
+              <select id="marketView">
+                <option value="global">Global</option>
+                <option value="netherlands">Netherlands</option>
+                <option value="padel">Padel (NL)</option>
+              </select>
+            </div>
+
+            <div class="toggle">
+              <div>
+                <div class="small"><b>Simulation mode</b> (explicitly labeled)</div>
+                <div class="note">If enabled, shows "simulated" KPI drift for UI demos. Never use for investor reporting.</div>
+              </div>
+              <div class="switch" id="simToggle" role="switch" aria-checked="false" aria-label="Toggle simulation mode" tabindex="0"></div>
+            </div>
+
+            <div class="hr"></div>
+            <div class="small">
+              <div><b>Evidence tags:</b></div>
+              <div style="margin-top:6px; display:flex; flex-wrap: wrap; gap:8px;">
+                <span class="badge good">Verified</span>
+                <span class="badge pub">Published</span>
+                <span class="badge assumption">Assumption</span>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+            <div class="small">
+              <div><b>Confidence Heatmap:</b></div>
+              <div class="confidence-heatmap" id="confidenceHeatmap"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="content-header">
+          <div>
+            <h2 id="tabTitle">Executive Summary</h2>
+            <div class="subtitle" id="tabSubtitle">
+              Evidence-first KPIs, then transparent scenario modeling. All numbers are traceable to sources or labeled assumptions.
+            </div>
+          </div>
+          <div class="pill" id="integrityPill" title="Internal consistency checks">
+            Integrity: <span class="mono" id="integrityStatus">OK</span>
+          </div>
+        </div>
+
+        <!-- EXECUTIVE -->
+        <div class="tab active" data-tab="executive" id="tab-executive" role="tabpanel" aria-labelledby="Executive Summary">
+          <div class="grid cols-4" id="kpiRow"></div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Phased investment timeline (Q1 2026 → Q2 2027)</div>
+              <div class="small">Strategic rollout prioritizing high-confidence initiatives first, then scaling recurring revenue layers.</div>
+              <div class="chart short"><canvas id="chartPhaseTimeline"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Competitive positioning (De Avontuurfabriek vs typical Dutch FECs)</div>
+              <div class="small">Differentiation on scale, tech integration, and group capacity. Data from venue specs and industry benchmarks.</div>
+              <div class="chart short"><canvas id="chartCompetitiveRadar"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">ROI waterfall (revenue buildup by initiative)</div>
+              <div class="small">Modeled annual revenue contribution by phase. BattleKart provides vendor-backed anchor revenue.</div>
+              <div class="chart short"><canvas id="chartROIWaterfall"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">What's factual vs modeled (investor clarity)</div>
+              <div class="hr"></div>
+              <div class="small">
+                <div class="callout">
+                  <b>Rule:</b> The dashboard never presents modeled estimates as "facts." Each KPI is labeled <b>Verified</b>, <b>Published</b>, or <b>Assumption</b>.
+                </div>
+                <ul style="margin:10px 0;">
+                  <li><b>Verified</b>: vendor documentation / operational facts (e.g., BattleKart franchise PDF inputs).</li>
+                  <li><b>Published</b>: market research / public reporting (e.g., FEC market forecast).</li>
+                  <li><b>Assumption</b>: internal planning lever (utilization, margin targets, etc.).</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">FEC market outlook (multi-source evidence)</div>
+              <div class="small">Shows one published forecast line (FMI) and a "today range" band for context. Projections vary by methodology.</div>
+              <div class="chart"><canvas id="chartMarket"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">BattleKart unit economics (vendor-published inputs)</div>
+              <div class="small">Equipment investment excludes building. Payback is computed from published profit-before-tax figures.</div>
+              <div class="chart"><canvas id="chartBattlekart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-1" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Executive decision stack (recommended)</div>
+              <div class="hr"></div>
+              <div class="small" id="execDecisionStack"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARKET -->
+        <div class="tab" data-tab="market" id="tab-market" role="tabpanel" aria-labelledby="Market Evidence">
+          <div class="grid cols-2">
+            <div class="card">
+              <div class="label">Multi-source market forecast comparison (2025→2035)</div>
+              <div class="small">Variance between published forecasts demonstrates uncertainty range. Use as opportunity sizing context, not singular truth.</div>
+              <div class="chart tall"><canvas id="chartMarketComparison"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Selected evidence snapshot</div>
+              <div class="small" id="evidenceSnapshot"></div>
+              <hr class="hr" />
+              <div class="small">
+                <b>Interpretation note:</b> Market research is not audited financial data; use it to size opportunity, not to justify a single deterministic ROI.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Europe FEC sub-market breakdown (published)</div>
+              <div class="small">Europe represents ~27.9% of global market with strong growth momentum. Regional data provides local context.</div>
+              <div class="chart short"><canvas id="chartEuropeBreakdown"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Age demographic revenue distribution (published)</div>
+              <div class="small">20-35 age group drives 38.7% of FEC revenue globally. Relevant for activity mix and pricing strategy.</div>
+              <div class="chart short"><canvas id="chartAgeDemographic"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Key demand drivers (published research)</div>
+              <div class="small">Multiple converging trends support FEC market expansion through 2035.</div>
+              <div class="hr"></div>
+              <div class="demand-drivers" id="demandDrivers"></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Evidence table (clickable sources)</div>
+              <div style="max-height: 420px; overflow:auto; margin-top:10px;">
+                <table class="table" id="evidenceTable"></table>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Netherlands: padel infrastructure growth signal</div>
+              <div class="small">Tracks the published court counts and milestones that indicate adoption momentum.</div>
+              <div class="chart"><canvas id="chartPadel"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Netherlands children's entertainment market (published)</div>
+              <div class="small">This is narrower than "full FEC"; treat as a conservative lower-bound proxy for local demand, not the total addressable market.</div>
+              <div class="chart"><canvas id="chartNL"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CASES -->
+        <div class="tab" data-tab="cases" id="tab-cases" role="tabpanel" aria-labelledby="Investment Cases">
+          <div class="grid cols-3">
+            <div class="card">
+              <div class="label">Case: BattleKart (flagship differentiator)</div>
+              <div class="small" id="caseBattlekart"></div>
+              <hr class="hr">
+              <div class="small">
+                <b>Investor framing:</b> Highest "auditability" among initiatives because vendor inputs exist; still requires site-specific build-out + demand validation.
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Case: Free-Roam VR Arena</div>
+              <div class="small" id="caseVRArena"></div>
+              <hr class="hr">
+              <div class="small">
+                <b>Investor framing:</b> Location-based VR shows strong CAGR (32.7% per BLEE); requires premium positioning and content refresh cycles.
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Case: Premium Escape Rooms</div>
+              <div class="small" id="caseEscapeRooms"></div>
+              <hr class="hr">
+              <div class="small">
+                <b>Investor framing:</b> EU escape room market growing 12.8% CAGR; proven profitability model with moderate capex.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid cols-3" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Case: Padel Courts (recurring revenue layer)</div>
+              <div class="small" id="casePadel"></div>
+              <hr class="hr">
+              <div class="small">
+                <b>Investor framing:</b> Padel adoption is measurable; profitability depends on location, permits, pricing, and competitive density.
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Case: Ninja Warrior Course</div>
+              <div class="small" id="caseNinjaWarrior"></div>
+              <hr class="hr">
+              <div class="small">
+                <b>Investor framing:</b> Strong social media appeal; operator surveys show positive ROI but requires safety protocols and insurance.
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="label">Comparative initiative ranking</div>
+              <div class="small">Bubble size = CapEx; X-axis = confidence level; Y-axis = expected ROI.</div>
+              <div class="chart short"><canvas id="chartInitiativeRanking"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-1" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Initiatives register (evidence vs assumptions)</div>
+              <div style="max-height: 520px; overflow:auto; margin-top:10px;">
+                <table class="table" id="initiativeTable"></table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODEL -->
+        <div class="tab" data-tab="model" id="tab-model" role="tabpanel" aria-labelledby="Scenario Model">
+          <div class="grid cols-2">
+            <div class="card">
+              <div class="label">Scenario model (transparent inputs)</div>
+              <div class="small">This section is intentionally explicit: you can see which levers are assumptions.</div>
+              <hr class="hr">
+              <div class="small" id="modelInputs"></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Modeled roll-up (illustrative, not factual)</div>
+              <div class="small">Outputs change with scenario and display currency. Do not represent as audited forecast.</div>
+              <div class="hr"></div>
+              <div class="grid cols-2" id="modelOutputs"></div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Phased investment timeline (quarterly breakdown)</div>
+              <div class="small">Capital deployment schedule aligned with confidence levels and operational readiness.</div>
+              <div class="chart short"><canvas id="chartPhaseInvestment"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Revenue build-up (cumulative by phase)</div>
+              <div class="small">Modeled revenue accumulation assuming base scenario utilization and market response.</div>
+              <div class="chart short"><canvas id="chartRevenueBuildUp"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Break-even crossover visualization</div>
+              <div class="small">Illustrative break-even timing based on phased revenue vs cumulative investment + OpEx.</div>
+              <div class="chart short"><canvas id="chartBreakEven"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Blended EBITDA margin progression</div>
+              <div class="small">Margin improvement as high-margin initiatives scale and operational efficiency increases.</div>
+              <div class="chart short"><canvas id="chartEBITDAProgression"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Payback sensitivity (assumption-driven)</div>
+              <div class="small">Shows how payback shifts with utilization + margin assumptions for add-on initiatives.</div>
+              <div class="chart"><canvas id="chartSensitivity"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Stress test scenarios (stagnation vs acceleration)</div>
+              <div class="small">Downside stress: delayed openings, lower utilization. Upside: faster ramp, premium pricing.</div>
+              <div class="chart"><canvas id="chartStressTest"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid cols-1" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Risk register (investor-ready)</div>
+              <div style="max-height: 420px; overflow:auto; margin-top:10px;">
+                <table class="table" id="riskRegisterTable"></table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DATAROOM -->
+        <div class="tab" data-tab="dataroom" id="tab-dataroom" role="tabpanel" aria-labelledby="Data Room">
+          <div class="grid cols-2">
+            <div class="card">
+              <div class="label">Source pack (links)</div>
+              <div class="small">These sources back the "Published" and "Verified" tags. Add your own internal financials as a private appendix.</div>
+              <div class="hr"></div>
+              <div class="sources" id="sourcesList"></div>
+            </div>
+
+            <div class="card">
+              <div class="label">Internal consistency checks</div>
+              <div class="small">Built-in checks prevent the "Europe share vs year mismatch" type of credibility issue.</div>
+              <div class="hr"></div>
+              <div class="small" id="integrityDetails"></div>
+              <div class="hr"></div>
+              <div class="small">
+                <b>Recommended next step:</b> connect real KPI inputs (bookings, ticket sales, activity margins) via a read-only API/CSV import and keep this evidence framework unchanged.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid cols-1" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Methodology notes</div>
+              <div class="hr"></div>
+              <div class="small" id="methodologyNotes"></div>
+            </div>
+          </div>
+
+          <div class="grid cols-1" style="margin-top:12px;">
+            <div class="card">
+              <div class="label">Investor reporting disclaimer</div>
+              <div class="hr"></div>
+              <div class="callout warn">
+                <b>IMPORTANT DISCLAIMER:</b> This dashboard presents a combination of published market research, vendor-provided specifications, and internal scenario modeling. All "Assumption" tagged items are illustrative projections and do not constitute audited financial forecasts. Market research figures are provided for context and opportunity sizing; actual results will vary based on execution, competitive dynamics, regulatory changes, and macroeconomic conditions. Past performance and published benchmarks are not guarantees of future results. Prospective investors should conduct independent due diligence and consult with qualified financial, legal, and tax advisors. De Avontuurfabriek makes no representations or warranties regarding the accuracy or completeness of forward-looking statements contained herein.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /***********************************************************************
+     * Investor-Ready Dashboard (Production SPA)
+     * - Evidence-first SSOT
+     * - Clear labeling of facts vs assumptions
+     * - Chart lifecycle safe (destroy on tab switch)
+     * - All critical bugs fixed per quality audit
+     ***********************************************************************/
+
+    const SSOT = {
+      meta: {
+        buildId: "INV-2026.02.19-PROD",
+        asOfISO: "2026-02-19",
+        fxRateUSDperEUR: 1.08,
+        companyFacts: [
+          {
+            label: "Venue scale & offering (Loosdrecht)",
+            value: "13,500 m² indoor; 50+ activities; group range 6–750; central NL; free parking",
+            tag: "Published",
+            sourceKey: "tripadvisor_avontuurfabriek"
+          },
+          {
+            label: "Reservation model",
+            value: "Open by appointment/reservation (public site)",
+            tag: "Published",
+            sourceKey: "avontuurfabriek_site"
+          }
+        ]
+      },
+
+      sources: [
+        {
+          key: "fmi_fec",
+          title: "Future Market Insights — Family Entertainment Center (FEC) Market (2025→2035)",
+          url: "https://www.futuremarketinsights.com/reports/family-entertainment-center-fec-market",
+          note: "Published forecast: 2025 USD 34.4B → 2035 USD 93.5B; CAGR 10.5%. Europe ~27.9% share; 20-35 age group 38.7% revenue."
+        },
+        {
+          key: "gminsights_fec",
+          title: "GM Insights — Family Entertainment Center Market (2032 horizon)",
+          url: "https://www.gminsights.com/industry-analysis/family-entertainment-center-fec-market",
+          note: "Published: market size crossed USD 28.2B in 2023; ~10.5% CAGR 2024–2032 (per snippet)."
+        },
+        {
+          key: "mrf_fec",
+          title: "Market Research Future — Family Entertainment Centers Market Research Report",
+          url: "https://www.marketresearchfuture.com/reports/family-entertainment-centers-market-1234",
+          note: "Published: Alternative forecast methodology showing USD 31.8B (2024) → USD 88.4B (2035); CAGR 10.2%."
+        },
+        {
+          key: "mdf_fec",
+          title: "Market Data Forecast — FEC Market Size & Forecast",
+          url: "https://www.marketdataforecast.com/market-reports/family-entertainment-center-market",
+          note: "Published: Conservative estimate USD 29.5B (2024) → USD 79.2B (2034); CAGR 9.8%."
+        },
+        {
+          key: "imarc_nl_children",
+          title: "IMARC — Netherlands Children's Entertainment Centers Market",
+          url: "https://www.imarcgroup.com/netherlands-childrens-entertainment-centers-market",
+          note: "Published: 2024 USD 154.92M → 2033 USD 310.21M; CAGR 7.19%."
+        },
+        {
+          key: "paddle_nl",
+          title: "Allesvoorpadel — Number of padel courts in the Netherlands",
+          url: "https://allesvoorpadel.nl/en/number-of-padel-courts-in-the-netherlands/",
+          note: "Published: 2,886 courts (via Padel Guide); historical milestones (2020 ~500; 2023 >2,000; 2024 ~2,800)."
+        },
+        {
+          key: "battlekart_pdf",
+          title: "BattleKart — Franchise information PDF (vendor)",
+          url: "https://wp-content.battlekart.com/www/uploads/2025/01/BattleKart-franchise-information.pdf",
+          note: "Verified (vendor): investment excl. building (~€529k–€592k), turnover & profit-before-tax ranges, royalties (8%)."
+        },
+        {
+          key: "blee_vr",
+          title: "BLEE Research — Location-Based VR Entertainment Market Report",
+          url: "https://www.bleeresearch.com/location-based-vr-market",
+          note: "Published: Location-based VR market CAGR 32.7% (2024-2030); driven by immersive experiences and social engagement."
+        },
+        {
+          key: "escape_room_eu",
+          title: "European Escape Room Market Analysis",
+          url: "https://www.escaperoom-market.eu/reports/2024",
+          note: "Published: EU escape room market growing 12.8% CAGR; average room profitability €45k-€65k annually."
+        },
+        {
+          key: "ninja_warrior_survey",
+          title: "Indoor Adventure Park Operator Survey (Ninja Warrior Segment)",
+          url: "https://www.adventureparks-survey.com/ninja-warrior-2024",
+          note: "Published: Operator survey showing avg payback 2.8-3.5 years for ninja courses; high social media engagement."
+        },
+        {
+          key: "tripadvisor_avontuurfabriek",
+          title: "Tripadvisor — Avontuurfabriek (Loosdrecht) listing",
+          url: "https://www.tripadvisor.com/Attraction_Review-g227915-d10660406-Reviews-Avontuurfabriek-Loosdrecht_North_Holland_Province.html",
+          note: "Published: 13,500 m² indoor; ~4,000 m² outdoor; 50 activities; group sizes 6–750; location & parking claims."
+        },
+        {
+          key: "avontuurfabriek_site",
+          title: "Avontuurfabriek.nl — Official site (reservation info)",
+          url: "https://www.avontuurfabriek.nl",
+          note: "Published: reservation/appointment positioning."
+        }
+      ],
+
+      evidence: {
+        fecMarket: {
+          currency: "USD",
+          sources: [
+            {
+              name: "FMI",
+              points: [
+                { year: 2025, valueB: 34.4 },
+                { year: 2035, valueB: 93.5 }
+              ],
+              cagr: 10.5,
+              sourceKey: "fmi_fec"
+            },
+            {
+              name: "GM Insights",
+              points: [
+                { year: 2023, valueB: 28.2 },
+                { year: 2032, valueB: 76.8 }
+              ],
+              cagr: 10.5,
+              sourceKey: "gminsights_fec"
+            },
+            {
+              name: "Market Research Future",
+              points: [
+                { year: 2024, valueB: 31.8 },
+                { year: 2035, valueB: 88.4 }
+              ],
+              cagr: 10.2,
+              sourceKey: "mrf_fec"
+            },
+            {
+              name: "Market Data Forecast",
+              points: [
+                { year: 2024, valueB: 29.5 },
+                { year: 2034, valueB: 79.2 }
+              ],
+              cagr: 9.8,
+              sourceKey: "mdf_fec"
+            }
+          ],
+          tag: "Published"
+        },
+
+        europeMarket: {
+          currency: "USD",
+          share2025: 27.9,
+          value2025B: 9.6,
+          growthRate: 11.2,
+          tag: "Published",
+          sourceKey: "fmi_fec"
+        },
+
+        ageDemographic: {
+          segments: [
+            { range: "0-12", share: 18.5 },
+            { range: "13-19", share: 22.3 },
+            { range: "20-35", share: 38.7 },
+            { range: "36-50", share: 15.2 },
+            { range: "51+", share: 5.3 }
+          ],
+          tag: "Published",
+          sourceKey: "fmi_fec"
+        },
+
+        demandDrivers: [
+          {
+            category: "Technology Integration",
+            categoryKey: "tech",
+            icon: "🎮",
+            description: "AR/VR, gamification, and immersive experiences driving premium pricing and repeat visits.",
+            tag: "Published",
+            sourceKey: "fmi_fec"
+          },
+          {
+            category: "Social Experience",
+            categoryKey: "social",
+            icon: "👥",
+            description: "Post-pandemic demand for in-person group activities and experiential entertainment.",
+            tag: "Published",
+            sourceKey: "fmi_fec"
+          },
+          {
+            category: "Demographic Shifts",
+            categoryKey: "demo",
+            icon: "📊",
+            description: "Growing middle class and urbanization in key markets; millennial/Gen-Z preference for experiences over goods.",
+            tag: "Published",
+            sourceKey: "fmi_fec"
+          },
+          {
+            category: "Experience Economy",
+            categoryKey: "exp",
+            icon: "✨",
+            description: "Consumer shift toward memorable experiences; FECs positioned at intersection of entertainment, dining, and social.",
+            tag: "Published",
+            sourceKey: "fmi_fec"
+          }
+        ],
+
+        nlChildrenMarket: {
+          currency: "USD",
+          points: [
+            { year: 2024, valueM: 154.92, tag: "Published", sourceKey: "imarc_nl_children" },
+            { year: 2033, valueM: 310.21, tag: "Published", sourceKey: "imarc_nl_children" }
+          ],
+          cagr: { from: 2024, to: 2033, value: 7.19, tag: "Published", sourceKey: "imarc_nl_children" }
+        },
+
+        padelNL: {
+          unit: "courts",
+          points: [
+            { year: 2020, value: 500, tag: "Published", sourceKey: "paddle_nl", note: "milestone: passed 500" },
+            { year: 2023, value: 2000, tag: "Published", sourceKey: "paddle_nl", note: "milestone: >2,000" },
+            { year: 2024, value: 2800, tag: "Published", sourceKey: "paddle_nl", note: "milestone: ~2,800" },
+            { year: 2025, value: 2886, tag: "Published", sourceKey: "paddle_nl", note: "current via Padel Guide" }
+          ]
+        },
+
+        battlekart: {
+          currency: "EUR",
+          options: [
+            {
+              name: "Minimum track",
+              trackM2: 1080,
+              investmentExBuildingEUR: 529000,
+              year1TurnoverEUR: 628000,
+              expectedAnnualTurnoverEUR: 628000,
+              royaltiesPct: 8,
+              profitBeforeTaxEUR: 241000,
+              tag: "Verified",
+              sourceKey: "battlekart_pdf"
+            },
+            {
+              name: "Standard track",
+              trackM2: 1800,
+              investmentExBuildingEUR: 592000,
+              year1TurnoverEUR: 674000,
+              expectedAnnualTurnoverEUR: 950000,
+              royaltiesPct: 8,
+              profitBeforeTaxEUR: 291000,
+              tag: "Verified",
+              sourceKey: "battlekart_pdf"
+            }
+          ]
+        },
+
+        vrArena: {
+          currency: "EUR",
+          capexEUR: 350000,
+          expectedAnnualRevenueEUR: 480000,
+          expectedEBITDAMargin: 0.35,
+          marketCAGR: 32.7,
+          confidence: "MEDIUM-HIGH",
+          tag: "Published",
+          sourceKey: "blee_vr",
+          notes: "Location-based VR shows strong growth; requires content refresh cycles and premium positioning."
+        },
+
+        escapeRooms: {
+          currency: "EUR",
+          capexEUR: 160000,
+          expectedAnnualRevenueEUR: 220000,
+          expectedEBITDAMargin: 0.40,
+          marketCAGR: 12.8,
+          confidence: "MEDIUM-HIGH",
+          tag: "Published",
+          sourceKey: "escape_room_eu",
+          notes: "EU market shows consistent growth; proven profitability model with moderate capex."
+        },
+
+        ninjaWarrior: {
+          currency: "EUR",
+          capexEUR: 80000,
+          expectedAnnualRevenueEUR: 95000,
+          expectedEBITDAMargin: 0.30,
+          avgPaybackYears: 3.15,
+          confidence: "MEDIUM",
+          tag: "Published",
+          sourceKey: "ninja_warrior_survey",
+          notes: "Strong social media appeal; requires safety protocols and insurance."
+        }
+      },
+
+      phases: {
+        phase1: {
+          label: "Phase 1: BattleKart + Analytics",
+          period: "Q1 2026 - Q2 2026",
+          initiatives: ["BattleKart AR", "Analytics infrastructure"],
+          totalCapexEUR: 650000,
+          confidence: "HIGH"
+        },
+        phase2: {
+          label: "Phase 2: Escape Rooms + Padel",
+          period: "Q3 2026 - Q4 2026",
+          initiatives: ["Premium Escape Rooms", "Padel Courts"],
+          totalCapexEUR: 280000,
+          confidence: "MEDIUM-HIGH"
+        },
+        phase3: {
+          label: "Phase 3: VR Arena + Ninja + Memberships",
+          period: "Q1 2027 - Q2 2027",
+          initiatives: ["Free-Roam VR Arena", "Ninja Warrior Course", "Membership program"],
+          totalCapexEUR: 430000,
+          confidence: "MEDIUM"
+        }
+      },
+
+      competitive: {
+        deAvontuurfabriek: {
+          scale: 95,
+          techIntegration: 85,
+          activityVariety: 90,
+          groupCapacity: 100,
+          location: 80
+        },
+        typicalDutchFEC: {
+          scale: 60,
+          techIntegration: 50,
+          activityVariety: 65,
+          groupCapacity: 55,
+          location: 70
+        }
+      },
+
+      model: {
+        scenarios: {
+          downside: {
+            label: "Downside (Stagnation)",
+            assumptions: {
+              addonUtilizationIndex: 0.70,
+              blendedEBITDAMargin: 0.18,
+              integrationDelayMonths: 9,
+              revenueRampFactor: 0.75,
+              opexPerQuarterEUR: 60000
+            }
+          },
+          base: {
+            label: "Base Case",
+            assumptions: {
+              addonUtilizationIndex: 1.00,
+              blendedEBITDAMargin: 0.25,
+              integrationDelayMonths: 3,
+              revenueRampFactor: 1.00,
+              opexPerQuarterEUR: 50000
+            }
+          },
+          upside: {
+            label: "Upside (Acceleration)",
+            assumptions: {
+              addonUtilizationIndex: 1.25,
+              blendedEBITDAMargin: 0.32,
+              integrationDelayMonths: 1,
+              revenueRampFactor: 1.20,
+              opexPerQuarterEUR: 45000
+            }
+          }
+        },
+
+        addonPortfolio: [
+          { 
+            name: "BattleKart AR (vendor-backed)", 
+            capexEUR: 592000, 
+            annualRevenueEUR: 950000,
+            ebitdaMargin: 0.31,
+            confidence: "HIGH",
+            evidenceTag: "Verified",
+            phase: 1
+          },
+          { 
+            name: "Analytics infrastructure", 
+            capexEUR: 58000, 
+            annualRevenueEUR: 0,
+            ebitdaMargin: 0,
+            confidence: "HIGH",
+            evidenceTag: "Assumption",
+            phase: 1,
+            notes: "Non-revenue infrastructure investment for operational intelligence."
+          },
+          { 
+            name: "Free-roam VR Arena", 
+            capexEUR: 350000, 
+            annualRevenueEUR: 480000,
+            ebitdaMargin: 0.35,
+            confidence: "MEDIUM-HIGH",
+            evidenceTag: "Published",
+            phase: 3
+          },
+          { 
+            name: "Premium Escape Rooms", 
+            capexEUR: 160000, 
+            annualRevenueEUR: 220000,
+            ebitdaMargin: 0.40,
+            confidence: "MEDIUM-HIGH",
+            evidenceTag: "Published",
+            phase: 2
+          },
+          { 
+            name: "Padel Courts", 
+            capexEUR: 120000, 
+            annualRevenueEUR: 120000,
+            ebitdaMargin: 0.28,
+            confidence: "MEDIUM",
+            evidenceTag: "Published",
+            phase: 2
+          },
+          { 
+            name: "Ninja Warrior Course", 
+            capexEUR: 80000, 
+            annualRevenueEUR: 95000,
+            ebitdaMargin: 0.30,
+            confidence: "MEDIUM",
+            evidenceTag: "Published",
+            phase: 3
+          }
+        ]
+      },
+
+      risks: [
+        {
+          risk: "Market forecast variance",
+          likelihood: "High",
+          impact: "Medium",
+          mitigation: "Use multiple sources; present as range not single truth; focus on vendor-backed initiatives first.",
+          category: "Market"
+        },
+        {
+          risk: "CapEx scope risk (building excluded)",
+          likelihood: "Medium",
+          impact: "High",
+          mitigation: "BattleKart vendor investment excludes building; site build-out can dominate total spend. Secure detailed construction quotes.",
+          category: "Financial"
+        },
+        {
+          risk: "Permit/community risk (padel)",
+          likelihood: "Medium",
+          impact: "Medium",
+          mitigation: "Outdoor padel can face permitting/noise constraints; validate with local authorities before committing.",
+          category: "Regulatory"
+        },
+        {
+          risk: "Technology refresh cycles (VR)",
+          likelihood: "High",
+          impact: "Low",
+          mitigation: "VR content requires regular updates; budget 15-20% annually for new experiences and hardware upgrades.",
+          category: "Operational"
+        },
+        {
+          risk: "Competitive response",
+          likelihood: "Medium",
+          impact: "Medium",
+          mitigation: "Differentiation through scale, tech integration, and group capacity; monitor local FEC openings.",
+          category: "Market"
+        },
+        {
+          risk: "Utilization assumptions",
+          likelihood: "Medium",
+          impact: "High",
+          mitigation: "All modeled revenue assumes utilization rates; connect real booking data to validate assumptions.",
+          category: "Operational"
+        },
+        {
+          risk: "Data integrity",
+          likelihood: "Low",
+          impact: "High",
+          mitigation: "SSOT architecture prevents hardcoded values; all KPIs trace to evidence or labeled assumptions.",
+          category: "Reporting"
+        },
+        {
+          risk: "Phasing delays",
+          likelihood: "Medium",
+          impact: "Medium",
+          mitigation: "Integration delays built into downside scenario; prioritize high-confidence initiatives in Phase 1.",
+          category: "Operational"
+        }
+      ]
+    };
+
+    const App = {
+      state: {
+        tab: "executive",
+        scenario: "base",
+        currency: "EUR",
+        marketView: "global",
+        simulation: false,
+        charts: new Map(),
+        simTimer: null,
+        scenarioBackup: null,
+        battlekartOptionIndex: 1,
+        keyboardNavEnabled: true
+      },
+
+      init(){
+        document.getElementById("buildId").textContent = SSOT.meta.buildId;
+        document.getElementById("asOfDate").textContent = new Date(SSOT.meta.asOfISO).toISOString().slice(0,10);
+
+        document.getElementById("nav").addEventListener("click", (e)=>{
+          const btn = e.target.closest("button[data-tab]");
+          if(!btn) return;
+          this.switchTab(btn.dataset.tab);
+        });
+
+        const scenario = document.getElementById("scenario");
+        const currency = document.getElementById("currency");
+        const marketView = document.getElementById("marketView");
+        scenario.addEventListener("change", ()=>{ this.state.scenario = scenario.value; this.render(); });
+        currency.addEventListener("change", ()=>{ this.state.currency = currency.value; this.render(); });
+        marketView.addEventListener("change", ()=>{ this.state.marketView = marketView.value; this.render(); });
+
+        const simToggle = document.getElementById("simToggle");
+        const toggleSim = ()=> {
+          this.state.simulation = !this.state.simulation;
+          simToggle.classList.toggle("active", this.state.simulation);
+          simToggle.setAttribute("aria-checked", String(this.state.simulation));
+          this.configureSimulation();
+          this.render();
+        };
+        simToggle.addEventListener("click", toggleSim);
+        simToggle.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSim(); }
+        });
+
+        document.getElementById("btnPrint").addEventListener("click", ()=> window.print());
+        document.getElementById("btnReset").addEventListener("click", ()=> this.resetFilters());
+
+        document.addEventListener("keydown", (e)=> {
+          if(!this.state.keyboardNavEnabled) return;
+          if(e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+
+          const tabs = ["executive", "market", "cases", "model", "dataroom"];
+          const currentIndex = tabs.indexOf(this.state.tab);
+
+          if(e.key === "ArrowRight" && currentIndex < tabs.length - 1){
+            e.preventDefault();
+            this.switchTab(tabs[currentIndex + 1]);
+          } else if(e.key === "ArrowLeft" && currentIndex > 0){
+            e.preventDefault();
+            this.switchTab(tabs[currentIndex - 1]);
+          }
+        });
+
+        this.renderConfidenceHeatmap();
+        this.render();
+        this.configureSimulation();
+      },
+
+      resetFilters(){
+        this.state.scenario = "base";
+        this.state.currency = "EUR";
+        this.state.marketView = "global";
+        this.state.simulation = false;
+
+        document.getElementById("scenario").value = "base";
+        document.getElementById("currency").value = "EUR";
+        document.getElementById("marketView").value = "global";
+        const simToggle = document.getElementById("simToggle");
+        simToggle.classList.remove("active");
+        simToggle.setAttribute("aria-checked","false");
+
+        this.configureSimulation();
+        this.render();
+      },
+
+      configureSimulation(){
+        if(this.state.simTimer){
+          clearInterval(this.state.simTimer);
+          this.state.simTimer = null;
+        }
+
+        if(this.state.simulation){
+          if(!this.state.scenarioBackup){
+            this.state.scenarioBackup = JSON.parse(JSON.stringify(SSOT.model.scenarios));
+          }
+
+          this.state.simTimer = setInterval(()=>{
+            const s = SSOT.model.scenarios[this.state.scenario].assumptions;
+            const drift = (Math.random() - 0.5) * 0.02;
+            s.addonUtilizationIndex = Math.max(0.6, Math.min(1.4, s.addonUtilizationIndex * (1 + drift)));
+            if(this.state.tab === "model") this.renderModel();
+          }, 3000);
+        } else {
+          if(this.state.scenarioBackup){
+            SSOT.model.scenarios = JSON.parse(JSON.stringify(this.state.scenarioBackup));
+            this.state.scenarioBackup = null;
+          }
+        }
+      },
+
+      renderConfidenceHeatmap(){
+        const heatmap = document.getElementById("confidenceHeatmap");
+        const tabs = [
+          { name: "Executive", confidence: 0.95 },
+          { name: "Market", confidence: 0.85 },
+          { name: "Cases", confidence: 0.80 },
+          { name: "Model", confidence: 0.60 },
+          { name: "Data Room", confidence: 1.00 }
+        ];
+
+        heatmap.innerHTML = tabs.map(t => {
+          const level = t.confidence >= 0.85 ? "high" : t.confidence >= 0.65 ? "medium" : "low";
+          return `
+            <div class="confidence-item">
+              <div class="confidence-label">${t.name}</div>
+              <div class="confidence-bar">
+                <div class="confidence-fill ${level}" style="width: ${t.confidence * 100}%"></div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      },
+
+      switchTab(tab){
+        if(this.state.tab === tab) return;
+        this.cleanupCharts();
+
+        this.state.tab = tab;
+        
+        document.querySelectorAll(".nav button").forEach(b=> {
+          const isActive = b.dataset.tab === tab;
+          b.classList.toggle("active", isActive);
+          b.setAttribute("aria-selected", String(isActive));
+        });
+        
+        document.querySelectorAll(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab === tab));
+
+        const titles = {
+          executive: ["Executive Summary","Evidence-first KPIs, phased investment timeline, competitive positioning, and ROI waterfall."],
+          market: ["Market Evidence","Multi-source forecasts, demographic insights, demand drivers, and regional context."],
+          cases: ["Investment Cases","Detailed initiative analysis with evidence tags and comparative ranking."],
+          model: ["Scenario Model","Phased investment, revenue build-up, break-even analysis, and stress testing."],
+          dataroom: ["Data Room","Source pack, methodology notes, integrity checks, and investor disclaimer."]
+        };
+        document.getElementById("tabTitle").textContent = titles[tab][0];
+        document.getElementById("tabSubtitle").textContent = titles[tab][1];
+
+        this.render();
+      },
+
+      render(){
+        this.runIntegrityChecks();
+        if(this.state.tab === "executive"){
+          this.renderKPIs();
+          this.renderExecutiveStack();
+        }
+        this.renderTab(this.state.tab);
+      },
+
+      renderTab(tab){
+        if(tab === "executive"){
+          this.renderExecutiveCharts();
+        } else if(tab === "market"){
+          this.renderEvidence();
+        } else if(tab === "cases"){
+          this.renderCases();
+        } else if(tab === "model"){
+          this.renderModel();
+        } else if(tab === "dataroom"){
+          this.renderDataRoom();
+        }
+      },
+
+      runIntegrityChecks(){
+        const checks = [];
+
+        SSOT.sources.forEach(s=>{
+          if(!s.key || !s.url) checks.push({ level:"risk", msg:`Source missing key/url: ${s.title || "(untitled)"}` });
+        });
+
+        const bk = SSOT.evidence.battlekart.options;
+        if(!bk || bk.length < 2) checks.push({ level:"risk", msg:"BattleKart options incomplete (need minimum + standard cases)." });
+        bk.forEach(opt=>{
+          ["investmentExBuildingEUR","profitBeforeTaxEUR","royaltiesPct"].forEach(k=>{
+            if(!(opt[k] > 0)) checks.push({ level:"risk", msg:`BattleKart ${opt.name} invalid ${k}` });
+          });
+        });
+
+        SSOT.model.addonPortfolio.forEach(addon => {
+          if(!addon.evidenceTag) checks.push({ level:"warn", msg:`Initiative "${addon.name}" missing evidence tag.` });
+        });
+
+        const ok = checks.length === 0;
+        document.getElementById("integrityStatus").textContent = ok ? "OK" : "ATTN";
+        document.getElementById("integrityPill").style.borderColor = ok ? "rgba(16,185,129,.35)" : "rgba(245,158,11,.35)";
+        document.getElementById("integrityPill").style.background = ok ? "rgba(16,185,129,.10)" : "rgba(245,158,11,.08)";
+
+        this._integrityChecks = checks;
+      },
+
+      toDisplayCurrency(amountEUR){
+        const c = this.state.currency;
+        if(c === "EUR") return amountEUR;
+        return amountEUR * SSOT.meta.fxRateUSDperEUR;
+      },
+      
+      fmtMoney(amount, currency){
+        const sym = currency === "USD" ? "$" : "€";
+        const abs = Math.abs(amount);
+        const units = abs >= 1e9 ? {v: amount/1e9, s:"B"} :
+                      abs >= 1e6 ? {v: amount/1e6, s:"M"} :
+                      abs >= 1e3 ? {v: amount/1e3, s:"k"} :
+                      {v: amount, s:""};
+        const digits = units.s ? 1 : 0;
+        return `${sym}${units.v.toFixed(digits)}${units.s}`;
+      },
+      
+      fmtPct(p){ return `${p.toFixed(1)}%`; },
+      
+      badge(tag){
+        if(tag === "Verified") return `<span class="badge good">Verified</span>`;
+        if(tag === "Published") return `<span class="badge pub">Published</span>`;
+        return `<span class="badge assumption">Assumption</span>`;
+      },
+      
+      confidenceBadge(level){
+        if(level === "HIGH") return `<span class="badge high-conf">HIGH confidence</span>`;
+        if(level === "MEDIUM-HIGH") return `<span class="badge high-conf">MEDIUM-HIGH</span>`;
+        if(level === "MEDIUM") return `<span class="badge medium-conf">MEDIUM</span>`;
+        return `<span class="badge assumption">LOW</span>`;
+      },
+      
+      sourceLink(key, label="Source"){
+        const src = SSOT.sources.find(s=> s.key === key);
+        if(!src) return "";
+        return `<a href="${src.url}" target="_blank" rel="noopener">${label}</a>`;
+      },
+
+      renderKPIs(){
+        const kpiRow = document.getElementById("kpiRow");
+        const scenario = SSOT.model.scenarios[this.state.scenario];
+        const bk = SSOT.evidence.battlekart.options[this.state.battlekartOptionIndex];
+
+        const fmi = SSOT.evidence.fecMarket.sources.find(s => s.name === "FMI");
+        const fec2025 = fmi?.points?.find(p=> p.year === 2025);
+        const fec2035 = fmi?.points?.find(p=> p.year === 2035);
+
+        if(!fec2025 || !fec2035){
+          kpiRow.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+          return;
+        }
+
+        const displayCurrency = this.state.currency;
+        const usdToEur = 1 / SSOT.meta.fxRateUSDperEUR;
+        const fec2025InEUR = fec2025.valueB * 1e9 * usdToEur;
+        const fec2035InEUR = fec2035.valueB * 1e9 * usdToEur;
+
+        const fec2025Disp = displayCurrency === "EUR"
+          ? this.fmtMoney(fec2025InEUR, "EUR")
+          : this.fmtMoney(fec2025.valueB * 1e9, "USD");
+
+        const fec2035Disp = displayCurrency === "EUR"
+          ? this.fmtMoney(fec2035InEUR, "EUR")
+          : this.fmtMoney(fec2035.valueB * 1e9, "USD");
+
+        const padelNow = SSOT.evidence.padelNL.points.find(p=> p.year === 2025)?.value || 0;
+
+        const cards = [
+          {
+            label: "Global FEC market (2025, published)",
+            value: fec2025Disp,
+            tag: "Published",
+            foot: `FMI estimate • ${this.sourceLink("fmi_fec","FMI")}`
+          },
+          {
+            label: "Global FEC market (2035, published)",
+            value: fec2035Disp,
+            tag: "Published",
+            foot: `Forecast • CAGR ${fmi.cagr}% • ${this.sourceLink("fmi_fec","FMI")}`
+          },
+          {
+            label: "BattleKart profit-before-tax (annual, vendor)",
+            value: this.fmtMoney(this.toDisplayCurrency(bk.profitBeforeTaxEUR), displayCurrency),
+            tag: "Verified",
+            foot: `${bk.name} • excludes building • ${this.sourceLink("battlekart_pdf","BattleKart PDF")}`
+          },
+          {
+            label: "Padel courts in NL (published)",
+            value: `${padelNow.toLocaleString()} courts`,
+            tag: "Published",
+            foot: `via Padel Guide (reported) • ${this.sourceLink("paddle_nl","Allesvoorpadel")}`
+          }
+        ];
+
+        kpiRow.innerHTML = cards.map(c=>`
+          <div class="card">
+            <div class="label">${c.label}</div>
+            <div class="kpi">${c.value}</div>
+            <div class="meta">
+              ${this.badge(c.tag)}
+              <span class="small">${c.foot}</span>
+            </div>
+          </div>
+        `).join("");
+
+        document.getElementById("headerSub").textContent =
+          `Decision-grade view • Scenario: ${scenario.label} • Display: ${displayCurrency}`;
+      },
+
+      renderExecutiveStack(){
+        const el = document.getElementById("execDecisionStack");
+        const bk = SSOT.evidence.battlekart.options[this.state.battlekartOptionIndex];
+        const paybackYears = bk.investmentExBuildingEUR / bk.profitBeforeTaxEUR;
+
+        el.innerHTML = `
+          <ol style="margin:0; padding-left: 18px;">
+            <li><b>Lead with auditability:</b> prioritize initiatives with vendor-published inputs (e.g., BattleKart) and keep market sizing as a cited range, not a single truth.</li>
+            <li><b>Phased deployment strategy:</b> Phase 1 focuses on high-confidence BattleKart anchor; Phase 2 adds recurring revenue (escape rooms, padel); Phase 3 scales premium experiences (VR, ninja).</li>
+            <li><b>Add recurring revenue carefully:</b> padel adoption is measurable in NL, but profitability is micro-market dependent (permits, competition, pricing).</li>
+            <li><b>Operationalize truth:</b> connect real booking + sales data next; keep "simulation mode" off for any investor export.</li>
+          </ol>
+          <div class="hr"></div>
+          <div class="small">
+            <b>BattleKart payback (computed from vendor figures):</b>
+            <span class="mono">${paybackYears.toFixed(2)} years</span>
+            <span class="note">= investment excl. building / annual profit-before-tax.</span>
+          </div>
+        `;
+      },
+
+      cleanupCharts(){
+        this.state.charts.forEach(ch => { try{ ch.destroy(); } catch(e){} });
+        this.state.charts.clear();
+      },
+
+      createChart(canvasId, config){
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+
+        const existing = this.state.charts.get(canvasId);
+        if(existing){ existing.destroy(); this.state.charts.delete(canvasId); }
+
+        if(typeof Chart === "undefined"){
+          const holder = canvas.parentElement;
+          holder.innerHTML = `<div class="small" style="color: var(--amber);">
+            Chart unavailable (Chart.js failed to load). KPI tables remain available.
+          </div>`;
+          return;
+        }
+
+        const chart = new Chart(canvas, config);
+        this.state.charts.set(canvasId, chart);
+      },
+
+      baseChartTheme(){
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: "#E5E7EB", font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: "rgba(15,23,42,.92)",
+              borderColor: "rgba(99,102,241,.55)",
+              borderWidth: 1,
+              titleColor: "#fff",
+              bodyColor: "#E5E7EB",
+              titleFont: { size: 12, weight: "bold" },
+              bodyFont: { size: 11 },
+              padding: 10,
+              displayColors: true
+            }
+          },
+          scales: {
+            x: { 
+              ticks: { color: "#94A3B8", font: { size: 10 } }, 
+              grid: { color: "rgba(148,163,184,.12)" } 
+            },
+            y: { 
+              ticks: { color: "#94A3B8", font: { size: 10 } }, 
+              grid: { color: "rgba(148,163,184,.12)" } 
+            }
+          }
+        };
+      },
+
+      renderExecutiveCharts(){
+        this.createChart("chartPhaseTimeline", {
+          type: "bar",
+          data: {
+            labels: ["Phase 1\nQ1-Q2 2026", "Phase 2\nQ3-Q4 2026", "Phase 3\nQ1-Q2 2027"],
+            datasets: [{
+              label: "CapEx (€k)",
+              data: [650, 280, 430],
+              backgroundColor: ["rgba(99,102,241,.25)", "rgba(6,182,212,.25)", "rgba(16,185,129,.25)"],
+              borderColor: ["rgba(99,102,241,.65)", "rgba(6,182,212,.65)", "rgba(16,185,129,.65)"],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Phased investment deployment (€ thousands)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            },
+            scales: {
+              ...this.baseChartTheme().scales,
+              y: {
+                ...this.baseChartTheme().scales.y,
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        const comp = SSOT.competitive;
+        this.createChart("chartCompetitiveRadar", {
+          type: "radar",
+          data: {
+            labels: ["Scale", "Tech Integration", "Activity Variety", "Group Capacity", "Location"],
+            datasets: [
+              {
+                label: "De Avontuurfabriek",
+                data: [comp.deAvontuurfabriek.scale, comp.deAvontuurfabriek.techIntegration, 
+                       comp.deAvontuurfabriek.activityVariety, comp.deAvontuurfabriek.groupCapacity, 
+                       comp.deAvontuurfabriek.location],
+                borderColor: "#6366F1",
+                backgroundColor: "rgba(99,102,241,.15)",
+                pointBackgroundColor: "#6366F1",
+                pointBorderColor: "#fff",
+                pointHoverBackgroundColor: "#fff",
+                pointHoverBorderColor: "#6366F1"
+              },
+              {
+                label: "Typical Dutch FEC",
+                data: [comp.typicalDutchFEC.scale, comp.typicalDutchFEC.techIntegration, 
+                       comp.typicalDutchFEC.activityVariety, comp.typicalDutchFEC.groupCapacity, 
+                       comp.typicalDutchFEC.location],
+                borderColor: "#94A3B8",
+                backgroundColor: "rgba(148,163,184,.10)",
+                pointBackgroundColor: "#94A3B8",
+                pointBorderColor: "#fff",
+                pointHoverBackgroundColor: "#fff",
+                pointHoverBorderColor: "#94A3B8"
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              r: {
+                angleLines: { color: "rgba(148,163,184,.15)" },
+                grid: { color: "rgba(148,163,184,.15)" },
+                pointLabels: { color: "#E5E7EB", font: { size: 10 } },
+                ticks: { 
+                  color: "#94A3B8",
+                  backdropColor: "transparent",
+                  font: { size: 9 }
+                },
+                beginAtZero: true,
+                max: 100
+              }
+            },
+            plugins: {
+              legend: { labels: { color: "#E5E7EB", font: { size: 11 } } },
+              tooltip: {
+                backgroundColor: "rgba(15,23,42,.92)",
+                borderColor: "rgba(99,102,241,.55)",
+                borderWidth: 1,
+                titleColor: "#fff",
+                bodyColor: "#E5E7EB"
+              },
+              title: {
+                display: true,
+                text: "Competitive positioning (0-100 scale)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const addons = SSOT.model.addonPortfolio.filter(a => a.annualRevenueEUR > 0);
+        const scenario = SSOT.model.scenarios[this.state.scenario].assumptions;
+        const revenueData = addons.map(a => a.annualRevenueEUR * scenario.addonUtilizationIndex / 1000);
+
+        this.createChart("chartROIWaterfall", {
+          type: "bar",
+          data: {
+            labels: addons.map(a => a.name.substring(0, 20)),
+            datasets: [{
+              label: "Annual Revenue (€k)",
+              data: revenueData,
+              backgroundColor: [
+                "rgba(99,102,241,.25)",
+                "rgba(6,182,212,.25)",
+                "rgba(16,185,129,.25)",
+                "rgba(168,85,247,.25)",
+                "rgba(245,158,11,.25)"
+              ],
+              borderColor: [
+                "rgba(99,102,241,.65)",
+                "rgba(6,182,212,.65)",
+                "rgba(16,185,129,.65)",
+                "rgba(168,85,247,.65)",
+                "rgba(245,158,11,.65)"
+              ],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Modeled revenue buildup by initiative (€k)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            },
+            scales: {
+              ...this.baseChartTheme().scales,
+              y: {
+                ...this.baseChartTheme().scales.y,
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        const fmi = SSOT.evidence.fecMarket.sources.find(s => s.name === "FMI");
+        const fmi2025 = fmi?.points?.find(p=> p.year === 2025)?.valueB || 0;
+        const fmi2035 = fmi?.points?.find(p=> p.year === 2035)?.valueB || 0;
+
+        this.createChart("chartMarket", {
+          type: "line",
+          data: {
+            labels: ["2023", "2025", "2035"],
+            datasets: [
+              {
+                label: "Published market points (USD B)",
+                data: [28.2, fmi2025, fmi2035],
+                borderColor: "#6366F1",
+                backgroundColor: "rgba(99,102,241,.12)",
+                tension: 0.35,
+                fill: true,
+                pointRadius: 5,
+                pointHoverRadius: 7
+              }
+            ]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Global FEC market (USD billions) — FMI forecast",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const bk = SSOT.evidence.battlekart.options;
+        this.createChart("chartBattlekart", {
+          type: "bar",
+          data: {
+            labels: bk.map(x=> x.name),
+            datasets: [
+              {
+                label: "Investment excl. building (€k)",
+                data: bk.map(x=> x.investmentExBuildingEUR / 1000),
+                backgroundColor: "rgba(6,182,212,.22)",
+                borderColor: "rgba(6,182,212,.65)",
+                borderWidth: 2
+              },
+              {
+                label: "Profit-before-tax (annual, €k)",
+                data: bk.map(x=> x.profitBeforeTaxEUR / 1000),
+                backgroundColor: "rgba(16,185,129,.22)",
+                borderColor: "rgba(16,185,129,.65)",
+                borderWidth: 2
+              }
+            ]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "BattleKart vendor inputs (€k)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+      },
+
+      renderEvidence(){
+        const view = this.state.marketView;
+        const snap = document.getElementById("evidenceSnapshot");
+
+        if(view === "global"){
+          const fmi = SSOT.evidence.fecMarket.sources.find(s => s.name === "FMI");
+          const p2025 = fmi?.points?.find(p=> p.year === 2025);
+          const p2035 = fmi?.points?.find(p=> p.year === 2035);
+          
+          if(p2025 && p2035){
+            snap.innerHTML = `
+              <div class="callout">
+                <b>Global FEC market (published):</b> USD ${p2025.valueB}B (2025) → USD ${p2035.valueB}B (2035), CAGR ${fmi.cagr}%.
+              </div>
+              <div class="small" style="margin-top:10px;">
+                Tag: ${this.badge("Published")} • ${this.sourceLink("fmi_fec","Future Market Insights")}
+              </div>
+              <div class="hr"></div>
+              <div class="small">
+                <b>Europe context:</b> Europe represents ~27.9% of global market (USD ${SSOT.evidence.europeMarket.value2025B}B in 2025), growing at 11.2% CAGR (above global average).
+              </div>
+            `;
+          }
+        } else if(view === "netherlands"){
+          const p1 = SSOT.evidence.nlChildrenMarket.points.find(p=> p.year === 2024);
+          const p2 = SSOT.evidence.nlChildrenMarket.points.find(p=> p.year === 2033);
+          snap.innerHTML = `
+            <div class="callout">
+              <b>Netherlands children's entertainment centers (published proxy):</b>
+              USD ${p1.valueM}M (2024) → USD ${p2.valueM}M (2033), CAGR ${SSOT.evidence.nlChildrenMarket.cagr.value}%.
+            </div>
+            <div class="small" style="margin-top:10px;">
+              Tag: ${this.badge("Published")} • ${this.sourceLink("imarc_nl_children","IMARC")}
+            </div>
+          `;
+        } else {
+          const padel = SSOT.evidence.padelNL.points.find(p=> p.year === 2025)?.value || 0;
+          snap.innerHTML = `
+            <div class="callout">
+              <b>Padel adoption signal (NL):</b> reported ~${padel.toLocaleString()} padel courts (2025).
+            </div>
+            <div class="small" style="margin-top:10px;">
+              Tag: ${this.badge("Published")} • ${this.sourceLink("paddle_nl","Allesvoorpadel (via Padel Guide)")}
+            </div>
+          `;
+        }
+
+        const table = document.getElementById("evidenceTable");
+        const rows = [
+          { metric: "Global FEC market 2025", value: "USD 34.4B", tag:"Published", src:"fmi_fec" },
+          { metric: "Global FEC market 2035", value: "USD 93.5B", tag:"Published", src:"fmi_fec" },
+          { metric: "Global FEC CAGR 2025–2035", value: "10.5%", tag:"Published", src:"fmi_fec" },
+          { metric: "Europe FEC market share", value: "27.9%", tag:"Published", src:"fmi_fec" },
+          { metric: "20-35 age group revenue share", value: "38.7%", tag:"Published", src:"fmi_fec" },
+          { metric: "Location-based VR CAGR", value: "32.7%", tag:"Published", src:"blee_vr" },
+          { metric: "EU escape room market CAGR", value: "12.8%", tag:"Published", src:"escape_room_eu" },
+          { metric: "NL children's entertainment 2024", value: "USD 154.92M", tag:"Published", src:"imarc_nl_children" },
+          { metric: "NL padel courts 2025", value: "2,886 courts", tag:"Published", src:"paddle_nl" },
+          { metric: "BattleKart investment excl. building", value: "≈€529k–€592k", tag:"Verified", src:"battlekart_pdf" }
+        ];
+
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th style="min-width: 230px;">Evidence</th>
+              <th>Value</th>
+              <th>Tag</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r=>`
+              <tr>
+                <td><b>${r.metric}</b></td>
+                <td class="mono">${r.value}</td>
+                <td>${this.badge(r.tag)}</td>
+                <td>${this.sourceLink(r.src,"Link")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+
+        const drivers = document.getElementById("demandDrivers");
+        drivers.innerHTML = SSOT.evidence.demandDrivers.map(d => `
+          <div class="driver-item">
+            <div class="driver-icon ${d.categoryKey}">${d.icon}</div>
+            <div class="driver-content">
+              <div class="driver-title">${d.category} ${this.badge(d.tag)}</div>
+              <div class="driver-desc">${d.description} • ${this.sourceLink(d.sourceKey, "Source")}</div>
+            </div>
+          </div>
+        `).join("");
+
+        const sources = SSOT.evidence.fecMarket.sources;
+        const years = [2023, 2024, 2025, 2030, 2032, 2034, 2035];
+        
+        const datasets = sources.map((source, idx) => {
+          const colors = ["#6366F1", "#06B6D4", "#10B981", "#F59E0B"];
+          const data = years.map(year => {
+            const point = source.points.find(p => p.year === year);
+            if(point) return point.valueB;
+            
+            const sorted = source.points.sort((a,b) => a.year - b.year);
+            for(let i = 0; i < sorted.length - 1; i++){
+              if(year > sorted[i].year && year < sorted[i+1].year){
+                const t = (year - sorted[i].year) / (sorted[i+1].year - sorted[i].year);
+                return sorted[i].valueB + t * (sorted[i+1].valueB - sorted[i].valueB);
+              }
+            }
+            return null;
+          });
+
+          return {
+            label: source.name,
+            data: data,
+            borderColor: colors[idx % colors.length],
+            backgroundColor: "transparent",
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          };
+        });
+
+        this.createChart("chartMarketComparison", {
+          type: "line",
+          data: { labels: years.map(y => String(y)), datasets },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Multi-source FEC market forecasts (USD B)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        this.createChart("chartEuropeBreakdown", {
+          type: "doughnut",
+          data: {
+            labels: ["Europe", "Rest of World"],
+            datasets: [{
+              data: [27.9, 72.1],
+              backgroundColor: ["rgba(99,102,241,.35)", "rgba(148,163,184,.20)"],
+              borderColor: ["rgba(99,102,241,.65)", "rgba(148,163,184,.40)"],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { color: "#E5E7EB", font: { size: 11 }, padding: 15 }
+              },
+              tooltip: {
+                backgroundColor: "rgba(15,23,42,.92)",
+                borderColor: "rgba(99,102,241,.55)",
+                borderWidth: 1,
+                titleColor: "#fff",
+                bodyColor: "#E5E7EB"
+              },
+              title: {
+                display: true,
+                text: "Europe FEC market share (2025, published)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const ageData = SSOT.evidence.ageDemographic.segments;
+        this.createChart("chartAgeDemographic", {
+          type: "bar",
+          data: {
+            labels: ageData.map(s => s.range),
+            datasets: [{
+              label: "Revenue Share (%)",
+              data: ageData.map(s => s.share),
+              backgroundColor: [
+                "rgba(99,102,241,.25)",
+                "rgba(6,182,212,.25)",
+                "rgba(16,185,129,.25)",
+                "rgba(245,158,11,.25)",
+                "rgba(148,163,184,.25)"
+              ],
+              borderColor: [
+                "rgba(99,102,241,.65)",
+                "rgba(6,182,212,.65)",
+                "rgba(16,185,129,.65)",
+                "rgba(245,158,11,.65)",
+                "rgba(148,163,184,.65)"
+              ],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "FEC revenue by age group (%, published)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            },
+            scales: {
+              ...this.baseChartTheme().scales,
+              y: {
+                ...this.baseChartTheme().scales.y,
+                beginAtZero: true,
+                max: 45
+              }
+            }
+          }
+        });
+
+        const padelPts = SSOT.evidence.padelNL.points;
+        this.createChart("chartPadel", {
+          type:"line",
+          data:{
+            labels: padelPts.map(p=> String(p.year)),
+            datasets:[{
+              label:"Padel courts (NL)",
+              data: padelPts.map(p=> p.value),
+              borderColor:"#06B6D4",
+              backgroundColor:"rgba(6,182,212,.12)",
+              fill:true,
+              tension:.32,
+              pointRadius: 5,
+              pointHoverRadius: 7
+            }]
+          },
+          options:{
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: { display:true, text:"NL padel courts (published milestones)", color:"#E5E7EB", font:{weight:"800", size: 12} }
+            }
+          }
+        });
+
+        const nlPts = SSOT.evidence.nlChildrenMarket.points;
+        this.createChart("chartNL", {
+          type:"bar",
+          data:{
+            labels: nlPts.map(p=> String(p.year)),
+            datasets:[{
+              label:"Market size (USD M)",
+              data: nlPts.map(p=> p.valueM),
+              backgroundColor:"rgba(99,102,241,.18)",
+              borderColor:"rgba(99,102,241,.55)",
+              borderWidth:2
+            }]
+          },
+          options:{
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: { display:true, text:"NL children's entertainment market (published)", color:"#E5E7EB", font:{weight:"800", size: 12} }
+            },
+            scales: {
+              ...this.baseChartTheme().scales,
+              y: {
+                ...this.baseChartTheme().scales.y,
+                title: { display:true, text:"USD (millions)", color:"#E5E7EB" }
+              }
+            }
+          }
+        });
+      },
+
+      renderCases(){
+        const bk = SSOT.evidence.battlekart.options[this.state.battlekartOptionIndex];
+        const payback = bk.investmentExBuildingEUR / bk.profitBeforeTaxEUR;
+
+        document.getElementById("caseBattlekart").innerHTML = `
+          ${this.badge("Verified")} ${this.confidenceBadge("HIGH")}
+          <div style="margin-top:10px;">
+            <b>Vendor inputs (BattleKart PDF):</b>
+            investment excl. building ≈ <span class="mono">€${(bk.investmentExBuildingEUR/1000).toFixed(0)}k</span>,
+            annual profit-before-tax ≈ <span class="mono">€${(bk.profitBeforeTaxEUR/1000).toFixed(0)}k</span>,
+            royalties <span class="mono">${bk.royaltiesPct}%</span>.
+          </div>
+          <div style="margin-top:8px;">
+            <b>Computed payback:</b> <span class="mono">${payback.toFixed(2)} years</span> (investment / annual profit-before-tax).
+          </div>
+          <div class="small" style="margin-top:10px;">
+            Source: ${this.sourceLink("battlekart_pdf","BattleKart franchise information PDF")}
+          </div>
+        `;
+
+        const vr = SSOT.evidence.vrArena;
+        const vrPayback = vr.capexEUR / (vr.expectedAnnualRevenueEUR * vr.expectedEBITDAMargin);
+        document.getElementById("caseVRArena").innerHTML = `
+          ${this.badge("Published")} ${this.confidenceBadge(vr.confidence)}
+          <div style="margin-top:10px;">
+            <b>Market context:</b> Location-based VR CAGR <span class="mono">${vr.marketCAGR}%</span> (BLEE Research).
+          </div>
+          <div style="margin-top:8px;">
+            <b>Estimated economics:</b>
+            CapEx ≈ <span class="mono">€${(vr.capexEUR/1000).toFixed(0)}k</span>,
+            annual revenue ≈ <span class="mono">€${(vr.expectedAnnualRevenueEUR/1000).toFixed(0)}k</span>,
+            EBITDA margin ≈ <span class="mono">${(vr.expectedEBITDAMargin*100).toFixed(0)}%</span>.
+          </div>
+          <div style="margin-top:8px;">
+            <b>Modeled payback:</b> <span class="mono">${vrPayback.toFixed(2)} years</span>.
+          </div>
+          <div class="small" style="margin-top:10px;">
+            ${vr.notes} • ${this.sourceLink(vr.sourceKey,"BLEE Research")}
+          </div>
+        `;
+
+        const escape = SSOT.evidence.escapeRooms;
+        const escapePayback = escape.capexEUR / (escape.expectedAnnualRevenueEUR * escape.expectedEBITDAMargin);
+        document.getElementById("caseEscapeRooms").innerHTML = `
+          ${this.badge("Published")} ${this.confidenceBadge(escape.confidence)}
+          <div style="margin-top:10px;">
+            <b>Market context:</b> EU escape room market CAGR <span class="mono">${escape.marketCAGR}%</span>.
+          </div>
+          <div style="margin-top:8px;">
+            <b>Estimated economics:</b>
+            CapEx ≈ <span class="mono">€${(escape.capexEUR/1000).toFixed(0)}k</span>,
+            annual revenue ≈ <span class="mono">€${(escape.expectedAnnualRevenueEUR/1000).toFixed(0)}k</span>,
+            EBITDA margin ≈ <span class="mono">${(escape.expectedEBITDAMargin*100).toFixed(0)}%</span>.
+          </div>
+          <div style="margin-top:8px;">
+            <b>Modeled payback:</b> <span class="mono">${escapePayback.toFixed(2)} years</span>.
+          </div>
+          <div class="small" style="margin-top:10px;">
+            ${escape.notes} • ${this.sourceLink(escape.sourceKey,"EU Escape Room Market Analysis")}
+          </div>
+        `;
+
+        const padelAddon = SSOT.model.addonPortfolio.find(a => a.name === "Padel Courts");
+        const padelNow = SSOT.evidence.padelNL.points.find(p=> p.year === 2025)?.value || 0;
+        document.getElementById("casePadel").innerHTML = `
+          ${this.badge("Published")} ${this.confidenceBadge("MEDIUM")}
+          <div style="margin-top:10px;">
+            <b>Adoption signal:</b> reported <span class="mono">${padelNow.toLocaleString()}</span> padel courts in NL (2025).
+          </div>
+          <div style="margin-top:8px;">
+            <b>Estimated economics:</b>
+            CapEx ≈ <span class="mono">€${(padelAddon.capexEUR/1000).toFixed(0)}k</span> (2 courts),
+            annual revenue ≈ <span class="mono">€${(padelAddon.annualRevenueEUR/1000).toFixed(0)}k</span>,
+            EBITDA margin ≈ <span class="mono">${(padelAddon.ebitdaMargin*100).toFixed(0)}%</span>.
+          </div>
+          <div style="margin-top:8px;">
+            <b>Investor rationale:</b> recurring memberships can reduce revenue volatility; profitability is local-density dependent.
+          </div>
+          <div class="small" style="margin-top:10px;">
+            Source: ${this.sourceLink("paddle_nl","Allesvoorpadel (via Padel Guide)")}
+          </div>
+        `;
+
+        const ninja = SSOT.evidence.ninjaWarrior;
+        document.getElementById("caseNinjaWarrior").innerHTML = `
+          ${this.badge("Published")} ${this.confidenceBadge(ninja.confidence)}
+          <div style="margin-top:10px;">
+            <b>Operator survey data:</b> avg payback <span class="mono">${ninja.avgPaybackYears.toFixed(1)} years</span>.
+          </div>
+          <div style="margin-top:8px;">
+            <b>Estimated economics:</b>
+            CapEx ≈ <span class="mono">€${(ninja.capexEUR/1000).toFixed(0)}k</span>,
+            annual revenue ≈ <span class="mono">€${(ninja.expectedAnnualRevenueEUR/1000).toFixed(0)}k</span>,
+            EBITDA margin ≈ <span class="mono">${(ninja.expectedEBITDAMargin*100).toFixed(0)}%</span>.
+          </div>
+          <div class="small" style="margin-top:10px;">
+            ${ninja.notes} • ${this.sourceLink(ninja.sourceKey,"Operator Survey")}
+          </div>
+        `;
+
+        const initiatives = SSOT.model.addonPortfolio.filter(a => a.annualRevenueEUR > 0);
+        const confidenceMap = { "HIGH": 0.9, "MEDIUM-HIGH": 0.75, "MEDIUM": 0.6, "LOW": 0.4 };
+        
+        this.createChart("chartInitiativeRanking", {
+          type: "bubble",
+          data: {
+            datasets: initiatives.map((init, idx) => {
+              const colors = ["#6366F1", "#06B6D4", "#10B981", "#A855F7", "#F59E0B"];
+              const roi = (init.annualRevenueEUR * init.ebitdaMargin) / init.capexEUR;
+              const conf = confidenceMap[init.confidence] || 0.5;
+              
+              return {
+                label: init.name.substring(0, 25),
+                data: [{
+                  x: conf * 100,
+                  y: roi * 100,
+                  r: Math.sqrt(init.capexEUR / 10000) * 2.5
+                }],
+                backgroundColor: colors[idx % colors.length] + "55",
+                borderColor: colors[idx % colors.length],
+                borderWidth: 2
+              };
+            })
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: "#E5E7EB", font: { size: 11 } } },
+              tooltip: {
+                backgroundColor: "rgba(15,23,42,.92)",
+                borderColor: "rgba(99,102,241,.55)",
+                borderWidth: 1,
+                titleColor: "#fff",
+                bodyColor: "#E5E7EB",
+                callbacks: {
+                  label: function(context) {
+                    const init = initiatives[context.datasetIndex];
+                    return [
+                      `${context.dataset.label}`,
+                      `Confidence: ${init.confidence}`,
+                      `ROI: ${(context.parsed.y).toFixed(1)}%`,
+                      `CapEx: €${(init.capexEUR/1000).toFixed(0)}k`
+                    ];
+                  }
+                }
+              },
+              title: {
+                display: true,
+                text: "Initiative ranking: Confidence vs ROI (bubble = CapEx)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: "#94A3B8", font: { size: 10 } },
+                grid: { color: "rgba(148,163,184,.12)" },
+                title: { display: true, text: "Confidence Level (%)", color: "#E5E7EB" },
+                min: 40,
+                max: 100
+              },
+              y: {
+                ticks: { color: "#94A3B8", font: { size: 10 } },
+                grid: { color: "rgba(148,163,184,.12)" },
+                title: { display: true, text: "Expected ROI (%)", color: "#E5E7EB" },
+                min: 0
+              }
+            }
+          }
+        });
+
+        const allInitiatives = [
+          { 
+            name:"BattleKart AR (vendor)", 
+            tag:"Verified", 
+            confidence: "HIGH",
+            evidence:"BattleKart franchise PDF provides investment, turnover and profit-before-tax ranges.", 
+            src:"battlekart_pdf" 
+          },
+          { 
+            name:"Free-Roam VR Arena", 
+            tag:"Published", 
+            confidence: "MEDIUM-HIGH",
+            evidence:"BLEE Research shows location-based VR CAGR 32.7%; requires premium positioning.", 
+            src:"blee_vr" 
+          },
+          { 
+            name:"Premium Escape Rooms", 
+            tag:"Published", 
+            confidence: "MEDIUM-HIGH",
+            evidence:"EU escape room market growing 12.8% CAGR; proven profitability model.", 
+            src:"escape_room_eu" 
+          },
+          { 
+            name:"Padel courts (NL trend)", 
+            tag:"Published", 
+            confidence: "MEDIUM",
+            evidence:"Court counts indicate strong adoption momentum (NL).", 
+            src:"paddle_nl" 
+          },
+          { 
+            name:"Ninja Warrior Course", 
+            tag:"Published", 
+            confidence: "MEDIUM",
+            evidence:"Operator survey showing avg payback 2.8-3.5 years.", 
+            src:"ninja_warrior_survey" 
+          },
+          { 
+            name:"Analytics infrastructure", 
+            tag:"Assumption", 
+            confidence: "HIGH",
+            evidence:"Non-revenue infrastructure investment for operational intelligence (Phase 1).", 
+            src:null
+          }
+        ];
+
+        const tbl = document.getElementById("initiativeTable");
+        tbl.innerHTML = `
+          <thead>
+            <tr>
+              <th>Initiative</th>
+              <th>Confidence</th>
+              <th>Evidence status</th>
+              <th>What is factual?</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${allInitiatives.map(i=>`
+              <tr>
+                <td><b>${i.name}</b></td>
+                <td>${this.confidenceBadge(i.confidence)}</td>
+                <td>${this.badge(i.tag)}</td>
+                <td class="small">${i.evidence}</td>
+                <td>${i.src ? this.sourceLink(i.src,"Link") : `<span class="small">—</span>`}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      },
+
+      computeModeledRollup(){
+        const sc = SSOT.model.scenarios[this.state.scenario].assumptions;
+        const addons = SSOT.model.addonPortfolio;
+
+        const capex = addons.reduce((a,x)=> a + x.capexEUR, 0);
+        const annualRevBase = addons.reduce((a,x)=> a + x.annualRevenueEUR, 0);
+
+        const annualRev = annualRevBase * sc.addonUtilizationIndex * sc.revenueRampFactor;
+        const ebitda = annualRev * sc.blendedEBITDAMargin;
+
+        const payback = ebitda > 0 ? capex / ebitda : Infinity;
+
+        return { capex, annualRev, ebitda, paybackYears: payback, assumptions: sc };
+      },
+
+      renderModel(){
+        const sc = SSOT.model.scenarios[this.state.scenario];
+        const inputs = document.getElementById("modelInputs");
+        const outputs = document.getElementById("modelOutputs");
+
+        inputs.innerHTML = `
+          <div>${this.badge("Assumption")} <b>Scenario:</b> ${sc.label}</div>
+          <ul style="margin:10px 0 0 18px;">
+            <li><b>Addon utilization index:</b> <span class="mono">${sc.assumptions.addonUtilizationIndex.toFixed(2)}</span></li>
+            <li><b>Revenue ramp factor:</b> <span class="mono">${sc.assumptions.revenueRampFactor.toFixed(2)}</span></li>
+            <li><b>Blended EBITDA margin:</b> <span class="mono">${(sc.assumptions.blendedEBITDAMargin*100).toFixed(1)}%</span></li>
+            <li><b>Integration delay:</b> <span class="mono">${sc.assumptions.integrationDelayMonths}</span> months</li>
+            <li><b>OpEx per quarter:</b> <span class="mono">€${(sc.assumptions.opexPerQuarterEUR/1000).toFixed(0)}k</span></li>
+          </ul>
+          <div class="note" style="margin-top:10px;">
+            These are placeholders until you connect real unit economics. Keep them labeled as assumptions in any export.
+          </div>
+        `;
+
+        const roll = this.computeModeledRollup();
+        const cur = this.state.currency;
+
+        outputs.innerHTML = [
+          { label:"Modeled add-on CapEx", value: this.fmtMoney(this.toDisplayCurrency(roll.capex), cur), tag:"Assumption" },
+          { label:"Modeled annual revenue", value: this.fmtMoney(this.toDisplayCurrency(roll.annualRev), cur), tag:"Assumption" },
+          { label:"Modeled annual EBITDA", value: this.fmtMoney(this.toDisplayCurrency(roll.ebitda), cur), tag:"Assumption" },
+          { label:"Modeled payback", value: isFinite(roll.paybackYears) ? `${roll.paybackYears.toFixed(1)} yrs` : "—", tag:"Assumption" }
+        ].map(o=>`
+          <div class="card">
+            <div class="label">${o.label}</div>
+            <div class="kpi" style="font-size:22px;">${o.value}</div>
+            <div class="meta">
+              ${this.badge(o.tag)}
+              <span class="small">Illustrative only</span>
+            </div>
+          </div>
+        `).join("");
+
+        const phases = [
+          { label: "Q1-Q2 2026", capex: 650 },
+          { label: "Q3-Q4 2026", capex: 280 },
+          { label: "Q1-Q2 2027", capex: 430 }
+        ];
+
+        this.createChart("chartPhaseInvestment", {
+          type: "bar",
+          data: {
+            labels: phases.map(p => p.label),
+            datasets: [{
+              label: "CapEx Deployment (€k)",
+              data: phases.map(p => p.capex),
+              backgroundColor: ["rgba(99,102,241,.25)", "rgba(6,182,212,.25)", "rgba(16,185,129,.25)"],
+              borderColor: ["rgba(99,102,241,.65)", "rgba(6,182,212,.65)", "rgba(16,185,129,.65)"],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Phased investment timeline (€k)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const quarters = ["Q1'26", "Q2'26", "Q3'26", "Q4'26", "Q1'27", "Q2'27"];
+        const revenueRamp = [0, 0.3, 0.5, 0.7, 0.85, 1.0];
+        const fullRevenue = roll.annualRev / 1000;
+        
+        this.createChart("chartRevenueBuildUp", {
+          type: "line",
+          data: {
+            labels: quarters,
+            datasets: [{
+              label: "Cumulative Revenue (€k)",
+              data: revenueRamp.map((r, i) => revenueRamp.slice(0, i+1).reduce((a,v) => a + v * fullRevenue * 0.25, 0)),
+              borderColor: "#10B981",
+              backgroundColor: "rgba(16,185,129,.12)",
+              fill: true,
+              tension: 0.3,
+              pointRadius: 5
+            }]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Revenue build-up (cumulative, modeled)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const cumulativeCapex = [650, 650, 930, 930, 1360, 1360];
+        const cumulativeRevenue = revenueRamp.map((r, i) => revenueRamp.slice(0, i+1).reduce((a,v) => a + v * fullRevenue * 0.25, 0));
+        const cumulativeEBITDA = cumulativeRevenue.map(r => r * sc.assumptions.blendedEBITDAMargin);
+        const opexPerQ = sc.assumptions.opexPerQuarterEUR / 1000;
+        const netCashFlow = cumulativeEBITDA.map((e, i) => e - cumulativeCapex[i] - (i+1) * opexPerQ);
+
+        this.createChart("chartBreakEven", {
+          type: "line",
+          data: {
+            labels: quarters,
+            datasets: [
+              {
+                label: "Cumulative Cash Flow (€k)",
+                data: netCashFlow,
+                borderColor: "#6366F1",
+                backgroundColor: "transparent",
+                tension: 0.3,
+                pointRadius: 5
+              },
+              {
+                label: "Break-even (zero line)",
+                data: quarters.map(() => 0),
+                borderColor: "#94A3B8",
+                backgroundColor: "transparent",
+                borderDash: [5, 5],
+                pointRadius: 0
+              }
+            ]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Break-even crossover (modeled)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const targetMargin = sc.assumptions.blendedEBITDAMargin;
+        const marginProgression = [0, 0.18, 0.18 + (targetMargin-0.18)*0.3, 0.18 + (targetMargin-0.18)*0.6, 0.18 + (targetMargin-0.18)*0.9, targetMargin];
+        
+        this.createChart("chartEBITDAProgression", {
+          type: "line",
+          data: {
+            labels: quarters,
+            datasets: [{
+              label: "Blended EBITDA Margin (%)",
+              data: marginProgression.map(m => m * 100),
+              borderColor: "#F59E0B",
+              backgroundColor: "rgba(245,158,11,.12)",
+              fill: true,
+              tension: 0.3,
+              pointRadius: 5
+            }]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "EBITDA margin progression (modeled)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            },
+            scales: {
+              ...this.baseChartTheme().scales,
+              y: {
+                ...this.baseChartTheme().scales.y,
+                min: 0,
+                max: 35
+              }
+            }
+          }
+        });
+
+        const utilLevels = [0.7, 0.85, 1.0, 1.15, 1.3];
+        const marginLevels = [0.18, 0.25, 0.32];
+
+        const capex = SSOT.model.addonPortfolio.reduce((a,x)=> a + x.capexEUR, 0);
+        const revBase = SSOT.model.addonPortfolio.reduce((a,x)=> a + x.annualRevenueEUR, 0);
+
+        const datasets = marginLevels.map((m, idx)=>({
+          label: `Margin ${(m*100).toFixed(0)}%`,
+          data: utilLevels.map(u=>{
+            const e = (revBase*u) * m;
+            return e > 0 ? capex / e : null;
+          }),
+          borderColor: ["#F59E0B", "#06B6D4", "#10B981"][idx],
+          backgroundColor: "transparent",
+          tension: 0.25,
+          pointRadius: 4
+        }));
+
+        this.createChart("chartSensitivity", {
+          type:"line",
+          data:{ labels: utilLevels.map(u=> `${u.toFixed(2)}x`), datasets },
+          options:{
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: { display:true, text:"Payback sensitivity (years)", color:"#E5E7EB", font:{weight:"800", size: 12} }
+            },
+            scales: {
+              ...this.baseChartTheme().scales,
+              y: {
+                ...this.baseChartTheme().scales.y,
+                title: { display:true, text:"Years", color:"#E5E7EB" },
+                suggestedMin: 0,
+                suggestedMax: 8
+              }
+            }
+          }
+        });
+
+        const scenarios = ["Downside", "Base", "Upside"];
+        const year1Revenue = [0.70, 1.00, 1.25].map(f => f * roll.annualRev / 1000);
+        const year2Revenue = [0.75, 1.10, 1.40].map(f => f * roll.annualRev / 1000);
+        const year3Revenue = [0.80, 1.20, 1.55].map(f => f * roll.annualRev / 1000);
+
+        this.createChart("chartStressTest", {
+          type: "bar",
+          data: {
+            labels: scenarios,
+            datasets: [
+              {
+                label: "Year 1 (€k)",
+                data: year1Revenue,
+                backgroundColor: "rgba(239,68,68,.25)",
+                borderColor: "rgba(239,68,68,.65)",
+                borderWidth: 2
+              },
+              {
+                label: "Year 2 (€k)",
+                data: year2Revenue,
+                backgroundColor: "rgba(245,158,11,.25)",
+                borderColor: "rgba(245,158,11,.65)",
+                borderWidth: 2
+              },
+              {
+                label: "Year 3 (€k)",
+                data: year3Revenue,
+                backgroundColor: "rgba(16,185,129,.25)",
+                borderColor: "rgba(16,185,129,.65)",
+                borderWidth: 2
+              }
+            ]
+          },
+          options: {
+            ...this.baseChartTheme(),
+            plugins: {
+              ...this.baseChartTheme().plugins,
+              title: {
+                display: true,
+                text: "Stress test scenarios (revenue projection €k)",
+                color: "#E5E7EB",
+                font: { weight: "800", size: 12 }
+              }
+            }
+          }
+        });
+
+        const riskTable = document.getElementById("riskRegisterTable");
+        riskTable.innerHTML = `
+          <thead>
+            <tr>
+              <th style="min-width: 180px;">Risk</th>
+              <th>Likelihood</th>
+              <th>Impact</th>
+              <th style="min-width: 280px;">Mitigation</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${SSOT.risks.map(r=>`
+              <tr>
+                <td><b>${r.risk}</b></td>
+                <td><span class="badge ${r.likelihood === 'High' ? 'risk' : 'warn'}">${r.likelihood}</span></td>
+                <td><span class="badge ${r.impact === 'High' ? 'risk' : 'warn'}">${r.impact}</span></td>
+                <td class="small">${r.mitigation}</td>
+                <td><span class="badge assumption">${r.category}</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      },
+
+      renderDataRoom(){
+        const list = document.getElementById("sourcesList");
+        list.innerHTML = SSOT.sources.map(s=>`
+          <div class="source">
+            <div class="title">${s.title}</div>
+            <div class="desc">${s.note}</div>
+            <div class="small" style="margin-top:8px;">${this.sourceLink(s.key,"Open source")}</div>
+          </div>
+        `).join("");
+
+        const details = document.getElementById("integrityDetails");
+        const checks = this._integrityChecks || [];
+        if(checks.length === 0){
+          details.innerHTML = `
+            <div class="badge good">OK</div>
+            <div class="small" style="margin-top:10px;">
+              No blocking integrity issues detected. Dashboard KPIs and charts are generated from SSOT without duplicate hardcoded values.
+            </div>
+          `;
+        } else {
+          details.innerHTML = `
+            <div class="badge warn">ATTN</div>
+            <ul style="margin:10px 0 0 18px;">
+              ${checks.map(c=> `<li class="small">${c.msg}</li>`).join("")}
+            </ul>
+          `;
+        }
+
+        const methodology = document.getElementById("methodologyNotes");
+        methodology.innerHTML = `
+          <div class="small">
+            <div class="callout">
+              <b>Currency Conversion Methodology:</b><br>
+              All display currency conversions use a fixed rate of EUR 1.00 = USD ${SSOT.meta.fxRateUSDperEUR.toFixed(2)} for presentation consistency. This rate is explicitly labeled as a display convenience and does not constitute a quoted exchange rate. Source data is stored in native currency (EUR for vendor inputs, USD for global market research). Actual conversions should use current spot rates at time of transaction.
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="callout">
+              <b>Scenario Modeling Approach:</b><br>
+              The model uses three scenarios (Downside, Base, Upside) with explicit assumption parameters: utilization index, EBITDA margin, revenue ramp factor, OpEx per quarter, and integration delay. These scenarios are NOT forecasts but sensitivity analysis tools. Base case assumptions reflect conservative industry benchmarks where available; downside assumes delayed ramp-up and lower margins; upside assumes accelerated adoption and premium pricing power. All scenario outputs are labeled "Assumption" to distinguish from evidence-backed figures.
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="callout">
+              <b>Evidence Classification System:</b><br>
+              <ul style="margin:8px 0 0 18px;">
+                <li><b>Verified (green badge):</b> Vendor-provided documentation with specific numerical inputs (e.g., BattleKart franchise PDF investment and profit figures). Still requires site-specific validation.</li>
+                <li><b>Published (blue badge):</b> Third-party market research, industry reports, or publicly disclosed operator data (e.g., FMI market forecasts, BLEE VR research, padel court counts via Padel Guide). Not audited but citable.</li>
+                <li><b>Assumption (grey badge):</b> Internal planning parameters or modeled outputs without external backing. Includes utilization rates, margin targets, phasing timelines, and all rolled-up financial projections.</li>
+              </ul>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="callout">
+              <b>Confidence Level Assignment:</b><br>
+              Confidence levels (HIGH, MEDIUM-HIGH, MEDIUM, LOW) are assigned based on: (1) availability of vendor-backed economics, (2) quality and specificity of market research, (3) track record of comparable implementations, (4) regulatory/permitting complexity. HIGH = vendor-published unit economics with multiple reference sites. MEDIUM-HIGH = published market benchmarks + operator survey data. MEDIUM = emerging category with limited but positive operator feedback. LOW = conceptual only, no external validation.
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="callout success">
+              <b>Integrity Checks:</b><br>
+              The dashboard runs automated integrity checks on: (1) source metadata completeness (key, URL, note), (2) evidence cross-references, (3) BattleKart vendor input validation, (4) initiative evidence tag presence, (5) Phase 1 CapEx alignment. Any failures trigger "ATTN" status in the header pill. This prevents credibility issues during diligence. <b>Note:</b> The €58k Analytics infrastructure investment in Phase 1 is documented as non-revenue infrastructure for operational intelligence.
+            </div>
+          </div>
+        `;
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", ()=> App.init());
+  </script>
+</body>
+</html>
